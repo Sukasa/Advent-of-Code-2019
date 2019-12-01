@@ -2,7 +2,7 @@
 
 namespace Day2
 {
-    class Program
+    class Day2
     {
         static void Main(string[] args)
         {

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Day1
 {
-    class Program
+    class Day1
     {
         static int FuelNeed(int Fuel)
         {
