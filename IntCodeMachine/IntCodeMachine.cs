@@ -12,6 +12,8 @@ namespace IntCodeMachine
         Dictionary<int, Action> Opcodes;
         Action[] Operands;
 
+        public static int[] ParseFile(string Filename = "input.txt") => System.IO.File.ReadAllText(Filename).Split(',').Select(x => int.Parse(x)).ToArray();
+
         public ICMachine()
         {
             Opcodes = new Dictionary<int, Action> {

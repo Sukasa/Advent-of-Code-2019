@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using IntCodeMachine;
 
 namespace Day2
@@ -9,7 +8,7 @@ namespace Day2
         static void Main(string[] args)
         {
             ICMachine Machine = new ICMachine();
-            int[] InitialState = System.IO.File.ReadAllText("input.txt").Split(",").Select(x => int.Parse(x)).ToArray();
+            int[] InitialState = ICMachine.ParseFile();
 
             // Apply patches
             InitialState[1] = 12;
