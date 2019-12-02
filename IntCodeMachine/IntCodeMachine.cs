@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace IntCodeMachine
 {
@@ -9,6 +10,7 @@ namespace IntCodeMachine
         int PC;
         bool Abort;
         Dictionary<int, Action> Opcodes;
+        Action[] Operands;
 
         public ICMachine()
         {
@@ -22,6 +24,11 @@ namespace IntCodeMachine
                 // 99 - Halt
                 {99,  () => {Abort = true;}},
             };
+
+            // Convert from sparse dictionary to flat array
+            Operands = new Action[Opcodes.Keys.Max() + 1];
+            foreach(var Opcode in Opcodes)
+                Operands[Opcode.Key] = Opcode.Value;
         }
 
         public ICMachine(int[] StartingState) : this()
@@ -74,9 +81,10 @@ namespace IntCodeMachine
         {
             PC = ProgramCounter;
             Abort = false;
+            int Operand;
 
             while (!Abort)
-                Opcodes[instructionRead()]();
+                (Operands[Operand =instructionRead()] ?? (() => { Console.WriteLine("Invalid Operand {0} at {1}", Operand, PC - 1);  Abort = true; }))();
 
         }
     }
