@@ -13,16 +13,26 @@ namespace Day4
             {
                 int matches = 0;
                 int add;
+                int[] checkarr = new int[8];
+                checkarr[0] = -1;
+                checkarr[7] = -1;
                 for (int check = 206938; check <= 679128; check++)
                 {
                     add = 0;
-                    string Adj = " " + check.ToString() + " ";
+
+                    checkarr[6] = check % 10;
+                    checkarr[5] = (check / 10) % 10;
+                    checkarr[4] = (check / 100) % 10;
+                    checkarr[3] = (check / 1000) % 10;
+                    checkarr[2] = (check / 10000) % 10;
+                    checkarr[1] = (check / 100000);
+
                     for (int i = 1; i < 6; i++)
                     {
-                        if (Adj[i] > Adj[i + 1])
+                        if (checkarr[i] > checkarr[i + 1])
                             goto Skip;
 
-                        if (add != 0 || ((Adj[i] == Adj[i + 1]) && (Adj[i] != Adj[i + 2]) && (Adj[i] != Adj[i - 1])))
+                        if (add != 0 || ((checkarr[i] == checkarr[i + 1]) && (checkarr[i] != checkarr[i + 2]) && (checkarr[i] != checkarr[i - 1])))
                             add = 1;
                     }
 
