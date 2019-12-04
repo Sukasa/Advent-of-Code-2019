@@ -17,12 +17,12 @@ namespace Day4
                 {
                     add = 0;
                     string Adj = " " + check.ToString() + " ";
-                    for (int i = 1; i < Adj.Length - 2; i++)
+                    for (int i = 1; i < 6; i++)
                     {
                         if (Adj[i] > Adj[i + 1])
                             goto Skip;
 
-                        if (add == 1 || ((Adj[i] == Adj[i + 1]) && (Adj[i] != Adj[i + 2]) && (Adj[i] != Adj[i - 1])))
+                        if (add != 0 || ((Adj[i] == Adj[i + 1]) && (Adj[i] != Adj[i + 2]) && (Adj[i] != Adj[i - 1])))
                             add = 1;
                     }
 
