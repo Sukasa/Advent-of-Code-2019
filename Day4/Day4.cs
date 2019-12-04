@@ -36,14 +36,5 @@ namespace Day4
             Sw.Stop();
             Console.WriteLine("Avg {0}ms to check {1} possible combinations", (double)Sw.ElapsedMilliseconds / 100, 679128 - 206938 + 1);
         }
-
-        static bool HasDouble(string Input)
-        {
-            int i;
-            for (i = 1; i < Input.Length - 2; i++)
-                if ((Input[i] == Input[i + 1]) && (Input[i] != Input[i + 2]) && (Input[i] != Input[i - 1]))
-                    return true;
-            return false;
-        }
     }
 }
