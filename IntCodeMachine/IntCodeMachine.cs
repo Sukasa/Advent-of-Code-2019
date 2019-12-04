@@ -29,7 +29,7 @@ namespace IntCodeMachine
 
             // Convert from sparse dictionary to flat array
             Operands = new Action[Opcodes.Keys.Max() + 1];
-            Action InvalidOpcode = () => { PC--; Console.WriteLine("Invalid opcode {0} as {1}", readAddress(PC), PC); Abort = true; };
+            Action InvalidOpcode = () => { PC--; Console.WriteLine("Invalid opcode {0} at {1}", readAddress(PC), PC); Abort = true; };
 
             for(int i = 0; i < Operands.Length; i++)
                 Operands[i] = InvalidOpcode;
@@ -93,5 +93,7 @@ namespace IntCodeMachine
                 Operands[instructionRead()]();
 
         }
+
+        public void Resume() => Execute(PC);
     }
 }
