@@ -9,7 +9,7 @@ namespace Day4
         {
             Stopwatch Sw = new Stopwatch();
             Sw.Start();
-            for (int test = 0; test < 100; test++)
+            for (int test = 0; test < 500; test++)
             {
                 int matches = 0;
                 int add;
@@ -32,7 +32,7 @@ namespace Day4
                         if (checkarr[i] > checkarr[i + 1])
                             goto Skip;
 
-                        if (add != 0 || ((checkarr[i] == checkarr[i + 1]) && (checkarr[i] != checkarr[i + 2]) && (checkarr[i] != checkarr[i - 1])))
+                        if (add == 0 && (checkarr[i] == checkarr[i + 1]) && (checkarr[i] != checkarr[i + 2]) && (checkarr[i] != checkarr[i - 1]))
                             add = 1;
                     }
 
@@ -44,7 +44,7 @@ namespace Day4
                 Console.WriteLine(matches);
             }
             Sw.Stop();
-            Console.WriteLine("Avg {0}ms to check {1} possible combinations", (double)Sw.ElapsedMilliseconds / 100, 679128 - 206938 + 1);
+            Console.WriteLine("Avg {0}ms to check {1} possible combinations", (double)Sw.ElapsedMilliseconds / 500, 679128 - 206938 + 1);
         }
     }
 }
