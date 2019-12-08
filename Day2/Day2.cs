@@ -17,7 +17,7 @@ namespace Day2
             Machine.LoadState(InitialState);
             Machine.Execute(0);
 
-            Console.WriteLine(Machine.readAddress(0));
+            Console.WriteLine(Machine.ReadAddress(0));
 
 
             // Part 2, noun/verb search
@@ -30,7 +30,7 @@ namespace Day2
                     Machine.SetVerb(verb);
                     Machine.Execute();
 
-                    if (Machine.readAddress(0) == 19690720)
+                    if (Machine.ReadAddress(0) == 19690720)
                     {
                         Console.WriteLine(100 * noun + verb);
                         return;

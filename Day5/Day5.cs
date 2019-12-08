@@ -7,8 +7,7 @@ namespace Day5
     {
         static void Main(string[] args)
         {
-            ICMachine Machine = new ICMachine();
-            Machine.LoadState(ICMachine.ParseFile());
+            ICMachine Machine = new ICMachine("input.txt");
             Machine.Execute();
         }
     }
