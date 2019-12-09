@@ -10,12 +10,13 @@ namespace IntCodeMachine
 
         #region Variables
 
-        int[] State;
-        int PC;
+        long[] State;
+        long PC;
         bool Abort;
-        Dictionary<int, Action> Opcodes;
+        Dictionary<long, Action> Opcodes;
         Action[] Operands;
-        int OpParams;
+        long OpParams;
+        long RB;
 
         #endregion
 
@@ -29,8 +30,10 @@ namespace IntCodeMachine
 
         #region Properties
 
-        public Queue<int> Output { get; } = new Queue<int>();
-        public Queue<int> Input { get; } = new Queue<int>();
+        public Queue<long> Output { get; } = new Queue<long>();
+        public Queue<long> Input { get; } = new Queue<long>();
+
+        public bool Trace { get; set; } = false;
 
         public bool InteractiveMode { get; set; } = true;
         public bool Running { get; private set; } = false;
@@ -54,51 +57,59 @@ namespace IntCodeMachine
 
         #region Configuration & Operation
 
-        public static int[] ParseFile(string Filename = "input.txt") => System.IO.File.ReadAllText(Filename).Split(',').Select(x => int.Parse(x)).ToArray();
+        public static long[] ParseFile(string Filename = "input.txt") => System.IO.File.ReadAllText(Filename).Split(',').Select(x => long.Parse(x)).ToArray();
 
-        public void SetVerb(int Verb)
+        public void SetVerb(long Verb)
         {
             writeAddress(2, Verb);
         }
 
-        public void SetNoun(int Noun)
+        public void SetNoun(long Noun)
         {
             writeAddress(1, Noun);
         }
 
-        public void LoadState(int[] NewState)
+        public void LoadState(long[] NewState)
         {
             Halt();
             while (Running)
                 Thread.Sleep(10);
 
-            State = new int[NewState.Length];
+            State = new long[NewState.Length];
             Array.Copy(NewState, 0, State, 0, NewState.Length);
             Input.Clear();
             Output.Clear();
+            RB = 0;
             AbortEvent.Reset();
             InputEvent.Reset();
             OutputEvent.Reset();
         }
 
-        public void ExecuteThreaded(int ProgramCounter = 0, string ThreadName = "VM Thread")
+        public void ExecuteThreaded(long ProgramCounter = 0, string ThreadName = "VM Thread")
         {
             Thread Async = new Thread((x) => Execute((int)x));
             Async.Name = ThreadName;
             Async.Start(ProgramCounter);
         }
 
-        public void Execute(int ProgramCounter = 0)
+        public void Execute(long ProgramCounter = 0)
         {
+            if (Running)
+                throw new InvalidOperationException("Cannot start execution on non-halted VM");
+
             PC = ProgramCounter;
             Abort = false;
             Running = true;
 
             while (!Abort)
             {
-                int Instruction = (OpParams = instructionRead()) % 100;
+                if (Trace)
+                    Console.Write("{0:X4}: ", PC);
+                long Instruction = (OpParams = instructionRead()) % 100;
                 OpParams /= 100;
                 Operands[Instruction]();
+                if (Trace)
+                    Console.WriteLine();
             }
 
             Running = false;
@@ -123,18 +134,18 @@ namespace IntCodeMachine
 
         public ICMachine()
         {
-            Opcodes = new Dictionary<int, Action> {
+            Opcodes = new Dictionary<long, Action> {
                 // 1 - Add
-                {1,  () => {int Addr1 = instructionRead(); int Addr2 = instructionRead(); writeParameter(instructionRead(), readParameter(Addr1) + readParameter(Addr2));}},
+                {1,  () => {long Addr1 = instructionRead(); long Addr2 = instructionRead(); writeParameter(instructionRead(), readParameter(Addr1) + readParameter(Addr2));}},
 
                 //2 - Multiply
-                {2,  () => {int Addr1 = instructionRead(); int Addr2 = instructionRead(); writeParameter(instructionRead(), readParameter(Addr1) * readParameter(Addr2));}},
+                {2,  () => {long Addr1 = instructionRead(); long Addr2 = instructionRead(); writeParameter(instructionRead(), readParameter(Addr1) * readParameter(Addr2));}},
 
                 // 3 - Write input to memory
                 {3, () => { GetInput(); } },
 
                 // 4 - Diagnostic output
-                {4, () => { Output.Enqueue(readParameter()); OutputEvent.Set(); } },
+                {4, () => { if(InteractiveMode) { if (Trace) Console.Write(" > Output: {0}", readParameter()); else Console.WriteLine("Output: {0}", readParameter()); } else { Output.Enqueue(readParameter()); OutputEvent.Set(); } } },
 
                 // 5 - Jump if true
                 {5, () => { if (readParameter() != 0) PC = readParameter(); else PC++; } },
@@ -143,10 +154,13 @@ namespace IntCodeMachine
                 {6, () => { if (readParameter() == 0) PC = readParameter(); else PC++; } },
                 
                 // 7 - Less Than
-                {7, () => { int Param1 = readParameter(); int Param2 = readParameter(); writeAddress(instructionRead(), (Param1 < Param2) ? 1 : 0); } },
+                {7, () => { long Param1 = readParameter(); long Param2 = readParameter(); writeParameter(instructionRead(), (Param1 < Param2) ? 1 : 0); } },
                 
                 // 8 - Equals
-                {8, () => { int Param1 = readParameter(); int Param2 = readParameter(); writeAddress(instructionRead(), (Param1 == Param2) ? 1 : 0); } },
+                {8, () => { long Param1 = readParameter(); long Param2 = readParameter(); writeParameter(instructionRead(), (Param1 == Param2) ? 1 : 0); } },
+
+                // 9 - Relative Base
+                {9, () => { RB += readParameter(); } },
 
                 // 99 - Halt
                 {99,  () => {Abort = true;}},
@@ -172,7 +186,7 @@ namespace IntCodeMachine
             if (Input.Count == 0 && InteractiveMode)
             {
                 Console.Write("Input Requested: ");
-                writeAddress(instructionRead(), int.Parse(Console.ReadLine()));
+                writeParameter(instructionRead(), long.Parse(Console.ReadLine()));
             }
             else
             {
@@ -185,30 +199,32 @@ namespace IntCodeMachine
                 if (Which == 1)
                     return;
 
-                writeAddress(instructionRead(), Input.Dequeue());
+                writeParameter(instructionRead(), Input.Dequeue());
             }
         }
 
-        internal int instructionRead()
+        internal long instructionRead()
         {
+            if (Trace)
+                Console.Write(" {0}", State[PC]);
             return State[PC++];
         }
 
-        private int readAddress(int Address)
+        private long readAddress(long Address)
         {
             if (Address < 0)
                 Address = 0;
             if (Address >= State.Length)
-                Array.Resize(ref State, Address + 1);
+                Array.Resize(ref State, (int)Address + 1);
 
             return State[Address];
         }
 
-        private int readParameter() => readParameter(instructionRead());
+        private long readParameter() => readParameter(instructionRead());
 
-        private int readParameter(int Param)
+        private long readParameter(long Param)
         {
-            int ParamMode = OpParams % 10;
+            long ParamMode = OpParams % 10;
             OpParams /= 10;
 
             switch (ParamMode)
@@ -217,14 +233,16 @@ namespace IntCodeMachine
                     return readAddress(Param);
                 case 1:
                     return Param;
+                case 2:
+                    return readAddress(Param + RB);
                 default:
                     return Param;
             }
         }
 
-        private void writeParameter(int Param, int Value)
+        private void writeParameter(long Param, long Value)
         {
-            int ParamMode = OpParams % 10;
+            long ParamMode = OpParams % 10;
             OpParams /= 10;
 
             switch (ParamMode)
@@ -232,15 +250,18 @@ namespace IntCodeMachine
                 case 0:
                     writeAddress(Param, Value);
                     break;
+                case 2:
+                    writeAddress(Param + RB, Value);
+                    break;
             }
         }
 
-        private void writeAddress(int Address, int Value)
+        private void writeAddress(long Address, long Value)
         {
             if (Address < 0)
                 Address = 0;
             if (Address >= State.Length)
-                Array.Resize(ref State, Address + 1);
+                Array.Resize(ref State, (int)Address + 1);
 
             State[Address] = Value;
         }
