@@ -27,7 +27,7 @@ namespace Day7
                     Input.Enqueue(Permutation[i]);
                     Input.Enqueue(PrevOutput);
                     VMs[i].Execute();
-                    PrevOutput = VMs[i].Output.Dequeue();
+                    PrevOutput = (int)VMs[i].Output.Dequeue();
                 }
 
                 if (PrevOutput > Highest)
@@ -66,7 +66,7 @@ namespace Day7
                     {
                         VMs[i].ProvideInput(Output);
                         VMs[i].AwaitOutput();
-                        Output = VMs[i].Output.Dequeue();
+                        Output = (int)VMs[i].Output.Dequeue();
                     }
                 }
 

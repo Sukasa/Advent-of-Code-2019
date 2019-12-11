@@ -25,6 +25,7 @@ namespace IntCodeMachine
         AutoResetEvent InputEvent = new AutoResetEvent(false);
         AutoResetEvent OutputEvent = new AutoResetEvent(false);
         AutoResetEvent AbortEvent = new AutoResetEvent(false);
+        ManualResetEvent EndedEvent = new ManualResetEvent(false);
 
         #endregion
 
@@ -42,15 +43,29 @@ namespace IntCodeMachine
 
         #region Public I/O Handling
 
-        public void AwaitOutput()
+        public void AwaitOutput(int Needed = 1)
         {
-            OutputEvent.WaitOne();
+            do
+            {
+                if (!Running)
+                    return;
+                WaitHandle.WaitAny(new WaitHandle[] { OutputEvent, EndedEvent });
+            } while (Output.Count < Needed);
+        }
+
+        public long GetOutput()
+        {
+            lock (Output)
+                return Output.Dequeue();
         }
 
         public void ProvideInput(int Value)
         {
-            Input.Enqueue(Value);
-            InputEvent.Set();
+            lock (Input)
+            {
+                Input.Enqueue(Value);
+                InputEvent.Set();
+            }
         }
 
         #endregion
@@ -85,7 +100,7 @@ namespace IntCodeMachine
             OutputEvent.Reset();
         }
 
-        public void ExecuteThreaded(long ProgramCounter = 0, string ThreadName = "VM Thread")
+        public void ExecuteThreaded(int ProgramCounter = 0, string ThreadName = "VM Thread")
         {
             Thread Async = new Thread((x) => Execute((int)x));
             Async.Name = ThreadName;
@@ -94,8 +109,10 @@ namespace IntCodeMachine
 
         public void Execute(long ProgramCounter = 0)
         {
+
             if (Running)
                 throw new InvalidOperationException("Cannot start execution on non-halted VM");
+            EndedEvent.Reset();
 
             PC = ProgramCounter;
             Abort = false;
@@ -113,6 +130,7 @@ namespace IntCodeMachine
             }
 
             Running = false;
+            EndedEvent.Set();
         }
 
         public void Resume() => Execute(PC);
@@ -183,7 +201,11 @@ namespace IntCodeMachine
 
         private void GetInput()
         {
-            if (Input.Count == 0 && InteractiveMode)
+            var Count = 0;
+            lock (Input)
+                Count = Input.Count;
+
+            if (Count == 0 && InteractiveMode)
             {
                 Console.Write("Input Requested: ");
                 writeParameter(instructionRead(), long.Parse(Console.ReadLine()));
@@ -191,7 +213,7 @@ namespace IntCodeMachine
             else
             {
                 int Which = 0;
-                if (Input.Count == 0)
+                if (Count == 0)
                     Which = WaitHandle.WaitAny(new WaitHandle[] { InputEvent, AbortEvent });
                 else
                     InputEvent.Reset();
@@ -199,7 +221,8 @@ namespace IntCodeMachine
                 if (Which == 1)
                     return;
 
-                writeParameter(instructionRead(), Input.Dequeue());
+                lock (Input)
+                    writeParameter(instructionRead(), Input.Dequeue());
             }
         }
 
